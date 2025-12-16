@@ -13,6 +13,7 @@ interface Task {
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
+  const [email, setEmail] = useState("");
   const router = useRouter();
 
   const token =
@@ -20,14 +21,12 @@ export default function DashboardPage() {
       ? localStorage.getItem("token")
       : null;
 
-  // 🔹 MOVE THIS UP
+  // Load tasks
   const fetchTasks = async () => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/tasks`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       }
     );
 
@@ -35,77 +34,94 @@ export default function DashboardPage() {
     setTasks(data);
   };
 
-useEffect(() => {
-  if (!token) {
-    router.push("/auth/login");
-    return;
-  }
+  useEffect(() => {
+    if (!token) {
+      router.push("/auth/login");
+      return;
+    }
 
-  const loadTasks = async () => {
-    await fetchTasks();
-  };
+    const storedEmail = localStorage.getItem("email");
+    if (storedEmail) setEmail(storedEmail);
 
-  loadTasks();
-}, []);
+    const loadTasks = async () => {
+      await fetchTasks();
+    };
 
+    loadTasks();
+  }, []);
 
+  // Create task
   const createTask = async () => {
     if (!title) return;
 
-    await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/tasks`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ title })
-      }
-    );
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ title })
+    });
 
     setTitle("");
     fetchTasks();
   };
 
+  // Delete task
   const deleteTask = async (id: string) => {
-    await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
     fetchTasks();
   };
 
-  return (
-    <div className="max-w-xl mx-auto mt-10 space-y-4">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
+    router.push("/auth/login");
+  };
 
+  return (
+    <div className="max-w-2xl mx-auto mt-10 space-y-6">
+      {/* Header */}
+      <header className="flex justify-between items-center border-b pb-2 mb-4">
+        <h1 className="text-2xl font-bold">Task Manager</h1>
+        <div className="flex items-center gap-4">
+          <span className="text-gray-700">{email}</span>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-3 py-1 rounded"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
+
+      {/* Add Task */}
       <div className="flex gap-2">
         <input
-          className="flex-1 border p-2"
+          className="flex-1 border p-2 rounded"
           placeholder="New task"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <button
           onClick={createTask}
-          className="bg-black text-white px-4"
+          className="bg-black text-white px-4 rounded"
         >
           Add
         </button>
       </div>
 
+      {/* Task List */}
       <ul className="space-y-2">
         {tasks.map((task) => (
           <li
             key={task._id}
-            className="border p-2 flex justify-between"
+            className="border p-2 flex justify-between rounded"
           >
             <span>{task.title}</span>
             <button
