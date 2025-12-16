@@ -20,15 +20,7 @@ export default function DashboardPage() {
       ? localStorage.getItem("token")
       : null;
 
-  useEffect(() => {
-    if (!token) {
-      router.push("/auth/login");
-      return;
-    }
-
-    fetchTasks();
-  }, []);
-
+  // 🔹 MOVE THIS UP
   const fetchTasks = async () => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/tasks`,
@@ -42,6 +34,20 @@ export default function DashboardPage() {
     const data = await res.json();
     setTasks(data);
   };
+
+useEffect(() => {
+  if (!token) {
+    router.push("/auth/login");
+    return;
+  }
+
+  const loadTasks = async () => {
+    await fetchTasks();
+  };
+
+  loadTasks();
+}, []);
+
 
   const createTask = async () => {
     if (!title) return;
